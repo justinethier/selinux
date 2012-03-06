@@ -37,6 +37,7 @@ module System.Linux.SELinux (
   lsetFileCon, lsetFileConRaw,
   fsetFileCon, fsetFileConRaw,
   getPeerCon, getPeerConRaw,
+  getSecurityCheckContext, getSecurityCheckContextRaw,
   getConfigPolicyRoot, getConfigBinaryPolicyPath,
   getConfigFailsafeContextPath, getConfigRemovableContextPath,
   getConfigDefaultContextPath, getConfigUserContextsPath,
@@ -68,6 +69,7 @@ data EnforceMode = Enforcing
                  | Permissive 
                  | Disabled deriving (Show, Ord, Eq)
 
+-- |Return True if we are running on a SELinux kernel
 isSELinuxEnabled :: IO Bool
 isSELinuxEnabled = fmap i2b $ throwErrnoIfMinus1 "isSELinuxEnabled" c_is_selinux_enabled
 
@@ -133,6 +135,10 @@ fsetFileConRaw fd   = withCon "fsetFileConRaw" (c_fsetfilecon_raw fd)
 
 getPeerCon fd       = queryCon "getPeerCon" (c_getpeercon fd)
 getPeerConRaw fd    = queryCon "getPeerConRaw" (c_getpeercon_raw fd)
+
+-- JAE
+getSecurityCheckContext           = withConMaybe "getSecurityCheckContext" c_security_check_context
+getSecurityCheckContextRaw        = withConMaybe "getSecurityCheckContextRaw" c_security_check_context_raw
 
 getConfigPolicyRoot               = queryConfig c_selinux_policy_root
 getConfigBinaryPolicyPath         = queryConfig c_selinux_binary_policy_path
@@ -250,6 +256,10 @@ foreign import ccall unsafe "selinux/selinux.h fsetfilecon_raw"        c_fsetfil
 
 foreign import ccall unsafe "selinux/selinux.h getpeercon"             c_getpeercon             :: CInt -> Ptr CSecurityContext -> IO CInt
 foreign import ccall unsafe "selinux/selinux.h getpeercon_raw"         c_getpeercon_raw         :: CInt -> Ptr CSecurityContext -> IO CInt
+
+-- Check the validity of a security context.
+foreign import ccall unsafe "selinux/selinux.h security_check_context" c_security_check_context :: CSecurityContext -> IO CInt
+foreign import ccall unsafe "selinux/selinux.h security_check_context_raw" c_security_check_context_raw :: CSecurityContext -> IO CInt
 
 foreign import ccall unsafe "selinux/selinux.h selinux_policy_root"    c_selinux_policy_root    :: IO CString
 
